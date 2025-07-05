@@ -1,0 +1,204 @@
+import java.io.*;
+import java.util.*;
+
+
+class Student {
+    private String id;
+    private String name;
+    private int age;
+    private String course;
+
+    public Student(String id, String name, int age, String course) {
+        this.id = id;
+        this.name = name;
+        this.age = age;
+        this.course = course;
+    }
+
+    public String getId() { return id; }
+    public String getName() { return name; }
+    public int getAge() { return age; }
+    public String getCourse() { return course; }
+
+    public void setName(String name) { this.name = name; }
+    public void setAge(int age) { this.age = age; }
+    public void setCourse(String course) { this.course = course; }
+
+    public String toString() {
+        return String.format("ID: %s, Name: %s, Age: %d, Course: %s", id, name, age, course);
+    }
+
+    public String toCSV() {
+        return id + "," + name + "," + age + "," + course;
+    }
+
+    public static Student fromCSV(String line) {
+        String[] parts = line.split(",");
+        return new Student(parts[0], parts[1], Integer.parseInt(parts[2]), parts[3]);
+    }
+}
+
+
+class StudentManager {
+    private List<Student> students;
+    private final String FILE_NAME = "students.txt";
+
+    public StudentManager() {
+        students = new ArrayList<>();
+        loadFromFile();
+    }
+
+   
+    private void loadFromFile() {
+        File file = new File(FILE_NAME);
+        if (!file.exists()) return;
+
+        try (BufferedReader reader = new BufferedReader(new FileReader(FILE_NAME))) {
+            String line;
+            while ((line = reader.readLine()) != null) {
+                students.add(Student.fromCSV(line));
+            }
+        } catch (IOException e) {
+            System.out.println("Error reading file.");
+        }
+    }
+
+   
+    public void saveToFile() {
+        try (PrintWriter writer = new PrintWriter(new FileWriter(FILE_NAME))) {
+            for (Student s : students) {
+                writer.println(s.toCSV());
+            }
+        } catch (IOException e) {
+            System.out.println("Error writing to file.");
+        }
+    }
+
+    public void addStudent(Student s) {
+        students.add(s);
+        System.out.println("Student added successfully.");
+    }
+
+    public void editStudent(String id, Scanner scanner) {
+        Student s = searchStudent(id);
+        if (s == null) {
+            System.out.println("Student not found.");
+            return;
+        }
+
+        System.out.print("Enter new name (leave blank to keep current): ");
+        scanner.nextLine(); // consume leftover newline
+        String name = scanner.nextLine();
+        if (!name.isEmpty()) s.setName(name);
+
+        System.out.print("Enter new age (or -1 to keep current): ");
+        int age = scanner.nextInt();
+        if (age > 0) s.setAge(age);
+
+        System.out.print("Enter new course (leave blank to keep current): ");
+        scanner.nextLine();
+        String course = scanner.nextLine();
+        if (!course.isEmpty()) s.setCourse(course);
+
+        System.out.println("Student updated successfully.");
+    }
+
+    public Student searchStudent(String id) {
+        for (Student s : students) {
+            if (s.getId().equalsIgnoreCase(id)) {
+                return s;
+            }
+        }
+        return null;
+    }
+
+    public void displayAllStudents() {
+        if (students.isEmpty()) {
+            System.out.println("No students to display.");
+        } else {
+            for (Student s : students) {
+                System.out.println(s);
+            }
+        }
+    }
+}
+
+
+public class StudentManagementSystem {
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        StudentManager manager = new StudentManager();
+
+        int choice;
+        do {
+            System.out.println("\n=== Student Management System ===");
+            System.out.println("1. Add Student");
+            System.out.println("2. Edit Student");
+            System.out.println("3. Search Student");
+            System.out.println("4. Display All Students");
+            System.out.println("5. Exit");
+            System.out.print("Enter your choice (1-5): ");
+            while (!scanner.hasNextInt()) {
+                System.out.print("Invalid input. Enter number from 1 to 5: ");
+                scanner.next();
+            }
+
+            choice = scanner.nextInt();
+
+            switch (choice) {
+                case 1:
+                    scanner.nextLine(); // clear buffer
+                    System.out.print("Enter ID: ");
+                    String id = scanner.nextLine();
+                    System.out.print("Enter Name: ");
+                    String name = scanner.nextLine();
+                    System.out.print("Enter Age: ");
+                    int age = scanner.nextInt();
+                    scanner.nextLine();
+                    System.out.print("Enter Course: ");
+                    String course = scanner.nextLine();
+
+                    if (id.isEmpty() || name.isEmpty() || course.isEmpty() || age <= 0) {
+                        System.out.println("Invalid input. All fields are required.");
+                    } else {
+                        manager.addStudent(new Student(id, name, age, course));
+                    }
+                    break;
+
+                case 2:
+                    scanner.nextLine();
+                    System.out.print("Enter ID of student to edit: ");
+                    String editId = scanner.nextLine();
+                    manager.editStudent(editId, scanner);
+                    break;
+
+                case 3:
+                    scanner.nextLine();
+                    System.out.print("Enter ID to search: ");
+                    String searchId = scanner.nextLine();
+                    Student found = manager.searchStudent(searchId);
+                    if (found != null) {
+                        System.out.println("Student found: " + found);
+                    } else {
+                        System.out.println("Student not found.");
+                    }
+                    break;
+
+                case 4:
+                    manager.displayAllStudents();
+                    break;
+
+                case 5:
+                    manager.saveToFile();
+                    System.out.println("Data saved. Exiting...");
+                    break;
+
+                default:
+                    System.out.println("Invalid choice.");
+            }
+
+        } while (choice != 5);
+
+        scanner.close();
+    }
+}
